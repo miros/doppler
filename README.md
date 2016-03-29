@@ -3,7 +3,7 @@ doppler
 
 [![Build Status](https://travis-ci.org/savonarola/doppler.svg?branch=master)](https://travis-ci.org/savonarola/doppler)
 
-Simple moking library for Erlang. The key features are:
+`doppler` is a simple moking library for Erlang. The key features are:
 
 * Orientation to DI-specific code. I.e. *it does not allow* to stub arbitrary module calls (`foo:bar(baz)`) like `em`, `meck` etc. See examples for details.
 * Simplicity. It does not use any complicated features like module code reload, etc.
