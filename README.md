@@ -1,9 +1,11 @@
 doppler
 =======
 
+[![Build Status](https://travis-ci.org/savonarola/doppler.svg?branch=master)](https://travis-ci.org/savonarola/doppler)
+
 Simple moking library for Erlang. The key features are:
 
-* Orientation to DI-specific code. I.e. *it does not allow* to stub arbitrary module calls (`foo:bar(baz)`) like `em`, `meck` etc. See example for details.
+* Orientation to DI-specific code. I.e. *it does not allow* to stub arbitrary module calls (`foo:bar(baz)`) like `em`, `meck` etc. See examples for details.
 * Simplicity. It does not use any complicated features like module code reload, etc.
 * Preserving state between calls of mock's methods. This allows to easily mock `gen_server` interfaces.
 
@@ -28,7 +30,7 @@ print_time() ->
     io:format("~p", [Time])
 ```
 
-How could we test it? The possible way is to "mock" `erlang:system_time` and `io:format` calls. But if we then change `io:format` call to `io:fwrite` or use `os:timestamt` instead of `erlang:system_time`, our code will still work, but tests will fail. This generally shouldn't happen: if a function's interface does not change, the tests shouldn't fail. This points out that our function's contract is wider then its interface: it implicitly uses "global" functions. Such code id difficult to test and support.
+How could we test it? The possible way is to "mock" `erlang:system_time` and `io:format` calls. But if we then change `io:format` call to `io:fwrite` or use `os:timestamp` instead of `erlang:system_time`, our code will still work, but tests will fail. This generally shouldn't happen: if a function's interface does not change, the tests shouldn't fail. This points out that our function's contract is wider then its interface: it implicitly uses "global" functions. Such code id difficult to test and support.
 
 One way to improve situation is to make contract "explicit".
 
@@ -82,7 +84,119 @@ Here we use `doppler` to mock `system` module and keep printed time in our doppl
 
 Of course, one can write a mock for `System` from scratch as a plain module, but this is a tedious job: we need to have a seperate module for each mock used, and also we should write a lot of boilerplate code for passing state between mocked calls.
 
+Usage
+----
 
+Initialization with function:
 
+```erlang
+D = doppler:start(fun() -> 123 end),
+123 = doppler:state(D),
+ok = doppler:stop(D).
+```
+
+Initialization with value:
+
+```erlang
+D = doppler:start(123),
+123 = doppler:state(D),
+ok = doppler:stop(D).
+```
+
+Getting defining methods and obtaining log of calls:
+
+```erlang
+D = doppler:start(123),
+[] = doppler:log(D),
+
+doppler:def(D, incr, fun(N, Inc) -> {N+Inc, N+Inc} end),
+doppler:def(D, decr, fun(N, Inc) -> {N-Inc, N-Inc} end),
+
+D:incr(1),
+D:decr(2),
+
+[{incr, [1]}, {decr, [2]}] = doppler:log(D),
+
+ok = doppler:stop(D).
+```
+
+Calling an undefined method (this can happen if we changed the mocked interface, but haven't updated tests yet):
+
+```erlang
+D = doppler:start(123),
+
+ok = try
+    D:incr(1)
+catch error:{doppler_undefined_method_called, [{doppler_state,123}, {name,incr}, {args,[1]}]} ->
+    ok
+end,
+
+ok = doppler:stop(D).
+```
+
+Mocked method should return:
+* A tuple `{Result, NewState}`. Then `Result` will be returned from the function when calles, and `NewState` will be memoized and passed to further calls.
+* A tuple `{error, Error, NewState}`. Then `NewState` will be memoized and `Error` will be thrown as an exception from the called method.
+
+This what happens when not following this convention:
+
+```erlang
+D = doppler:start(123),
+
+doppler:def(D, incr, fun(_State, _Arg) -> bad_return end),
+
+ok = try
+    D:incr(1)
+catch error:{doppler_bad_method_return, [{doppler_state,123}, {name,incr}, {args,[1]}, {return, bad_return}]} ->
+    ok
+end,
+
+ok = doppler:stop(D)
+```
+
+Having an exception inside mocked method (this should not happen):
+
+```erlang
+D = doppler:start(123),
+
+doppler:def(D, incr, fun(_, _) -> erlang:error(bad_return) end),
+
+ok = try
+    D:incr(1)
+catch error:{doppler_error_in_method, [{doppler_state,123}, {name,incr}, {args,[1]}, {error, {error, bad_return}}]} ->
+    ok
+end,
+
+ok = doppler:stop(D).
+```
+
+Emulating exceptions:
+
+```erlang
+D = doppler:start(123),
+
+doppler:def(D, incr, fun(N, _) -> {error, {error, bar}, N} end),
+ok = try
+    D:incr(1)
+catch error:bar ->
+    ok
+end,
+
+doppler:def(D, incr, fun(N, _) -> {error, {throw, bar}, N} end),
+ok = try
+    D:incr(1)
+catch throw:bar ->
+    ok
+end,
+
+doppler:def(D, incr, fun(N, _) -> {error, {exit, bar}, N} end),
+ok = try
+    D:incr(1)
+catch exit:bar ->
+    ok
+end,
+
+ok = doppler:stop(D)
+```
 
 

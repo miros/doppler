@@ -102,7 +102,7 @@ call_ok(_Config) ->
 call_unknown_method(_Config) ->
     D = doppler:start(123),
 
-    try
+    ok = try
         D:incr(1)
     catch error:{doppler_undefined_method_called, [{doppler_state,123}, {name,incr}, {args,[1]}]} ->
         ok
