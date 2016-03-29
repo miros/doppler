@@ -9,6 +9,8 @@ doppler
 * Simplicity. It does not use any complicated features like module code reload, etc.
 * Preserving state between calls of mock's methods. This allows to easily mock `gen_server` interfaces.
 
+NB. There are many kinds of objects which are often refered to as "mocks", see, for example, [The Little Mocker](https://blog.8thlight.com/uncle-bob/2014/05/14/TheLittleMocker.html). According to this notation, objects that `doppler` constructs are close to "spies", but they also can be used as "stubs", "dummies", etc.
+
 Build
 -----
 
@@ -30,7 +32,7 @@ print_time() ->
     io:format("~p", [Time])
 ```
 
-How could we test it? The possible way is to "mock" `erlang:system_time` and `io:format` calls. But if we then change `io:format` call to `io:fwrite` or use `os:timestamp` instead of `erlang:system_time`, our code will still work, but tests will fail. This generally shouldn't happen: if a function's interface does not change, the tests shouldn't fail. This points out that our function's contract is wider then its interface: it implicitly uses "global" functions. Such code id difficult to test and support.
+How could we test it? The possible way is to "mock" `erlang:system_time` and `io:format` calls. But if we then change `io:format` call to `io:fwrite` or use `os:timestamp` instead of `erlang:system_time`, our code will still work, but tests will fail. This generally shouldn't happen: if a function's interface does not change, the tests shouldn't fail. This points out that our function's contract is wider then its interface: it implicitly uses "global" functions. Such code is difficult to test and support.
 
 One way to improve situation is to make contract "explicit".
 
