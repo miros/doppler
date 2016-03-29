@@ -103,7 +103,18 @@ D = doppler:start(123),
 ok = doppler:stop(D).
 ```
 
-Getting defining methods and obtaining log of calls:
+Defining methods and obtaining log of calls.
+
+To define a method, we call `doppler:def`. We pass to it:
+* The doppler object itself.
+* A name of the function.
+* A lambda implementing the method.
+
+When the method is called, it receives the doppler's state as first argument (`this` or `self`) and all original arguments of the call.
+The method should return:
+* A tuple `{Result, NewState}`. Then `Result` will be returned from the function when calles, and `NewState` will be memoized and passed to further calls.
+* A tuple `{error, Error, NewState}`. Then `NewState` will be memoized and `Error` will be thrown as an exception from the called method.
+
 
 ```erlang
 D = doppler:start(123),
@@ -134,11 +145,7 @@ end,
 ok = doppler:stop(D).
 ```
 
-Mocked method should return:
-* A tuple `{Result, NewState}`. Then `Result` will be returned from the function when calles, and `NewState` will be memoized and passed to further calls.
-* A tuple `{error, Error, NewState}`. Then `NewState` will be memoized and `Error` will be thrown as an exception from the called method.
-
-This what happens when not following this convention:
+This what happens when mocked method is not defined properly:
 
 ```erlang
 D = doppler:start(123),
