@@ -112,7 +112,7 @@ To define a method, we call `doppler:def`. We pass to it:
 * A name of the function.
 * A lambda implementing the method.
 
-When the method is called, it receives the doppler's state as first argument (`this` or `self`) and all original arguments of the call.
+When the method is called, it receives the doppler's state as first argument (this may be considered as `this` or `self`) and all original arguments of the call.
 The method should return:
 * A tuple `{Result, NewState}`. Then `Result` will be returned from the function when calles, and `NewState` will be memoized and passed to further calls.
 * A tuple `{error, Error, NewState}`. Then `NewState` will be memoized and `Error` will be thrown as an exception from the called method.
