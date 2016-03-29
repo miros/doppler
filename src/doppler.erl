@@ -78,10 +78,10 @@ def(#doppler_universal{doppler_ref = DopplerRef}, Name, Fun) when is_atom(Name) 
 call(FunName, Args) ->
     {#doppler_universal{doppler_ref = DopplerRef}, FunArgs} = split_args(Args),
     case agent:get_and_update(DopplerRef, fun(Doppler) -> call(Doppler, FunName, FunArgs) end) of
-        {unknown_method, State} -> erlang:error({doppler_undefined_method_called, {doppler_state, State}, {name, FunName}, {args, FunArgs}});
-        {bad_return, Return, State} -> erlang:error({doppler_bad_method_return, {doppler_state, State}, {name, FunName}, {args, FunArgs}, {return, Return}});
-        {call_error, Error, State} -> erlang:error({doppler_error_in_method, {doppler_state, State}, {name, FunName}, {args, FunArgs}, {error, Error}});
-        {custom_call_error, Error} -> erlang:error(Error);
+        {unknown_method, State} -> erlang:error({doppler_undefined_method_called, [{doppler_state, State}, {name, FunName}, {args, FunArgs}]});
+        {bad_return, Return, State} -> erlang:error({doppler_bad_method_return, [{doppler_state, State}, {name, FunName}, {args, FunArgs}, {return, Return}]});
+        {call_error, Error, State} -> erlang:error({doppler_error_in_method, [{doppler_state, State}, {name, FunName}, {args, FunArgs}, {error, Error}]});
+        {custom_call_error, Error} -> raise_error(Error);
         {result, Result} -> Result
     end.
 
@@ -106,7 +106,16 @@ call(#doppler{state = State, methods = Methods, log = Log} = Doppler, FunName, F
                     BadReturn -> {{bad_return, BadReturn, State}, Doppler#doppler{log = [{FunName, FunArgs} | Log]}}
                 end
             catch Class:Error ->
-                {{call_error, {Class, Error}}, Doppler#doppler{log = [{FunName, FunArgs} | Log]}}
+                {{call_error, {Class, Error}, State}, Doppler#doppler{log = [{FunName, FunArgs} | Log]}}
             end
     end.
+
+raise_error({throw, What}) ->
+    throw(What);
+raise_error({exit, What}) ->
+    exit(What);
+raise_error({error, What}) ->
+    erlang:error(What);
+raise_error(BadError) ->
+    erlang:error({doppler_bad_custom_error, BadError}).
 
