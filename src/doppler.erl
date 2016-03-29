@@ -11,24 +11,35 @@
     call/2
 ]).
 
+-type state() :: term().
+-type methods() :: map().
+-type log() :: list().
+
 -record(doppler, {
-    state,
-    methods,
-    log
+    state :: state(),
+    methods :: methods(),
+    log :: log()
 }).
 
 -record(doppler_universal, {
-    doppler_ref
+    doppler_ref :: pid()
 }).
+
+-type init_fun() :: fun(() -> state()).
+
+-type method_return() :: {term(), state()} | {error, term(), state()}.
+-type method_fun() :: fun((...) -> method_return()).
 
 
 %%====================================================================
 %% API functions
 %%====================================================================
 
-start(Fun) when is_function(Fun) ->
+
+-spec start(init_fun() | state()) -> #doppler_universal{}.
+start(InitFun) when is_function(InitFun) ->
     {ok, DopplerRef} = agent:start(fun() -> #doppler{
-        state = Fun(),
+        state = InitFun(),
         methods = #{},
         log = []
     } end),
@@ -39,18 +50,23 @@ start(Fun) when is_function(Fun) ->
 start(InitialState) ->
     start(fun() -> InitialState end).
 
+-spec stop(#doppler_universal{}) -> ok.
 stop(#doppler_universal{doppler_ref = DopplerRef}) ->
     ok = agent:stop(DopplerRef).
 
+-spec log(#doppler_universal{}) -> log().
 log(#doppler_universal{doppler_ref = DopplerRef}) ->
     agent:get(DopplerRef, fun(#doppler{log = Log}) -> lists:reverse(Log) end).
 
+-spec state(#doppler_universal{}) -> state().
 state(#doppler_universal{doppler_ref = DopplerRef}) ->
     agent:get(DopplerRef, fun(#doppler{state = State}) -> State end).
 
+-spec methods(#doppler_universal{}) -> methods().
 methods(#doppler_universal{doppler_ref = DopplerRef}) ->
     agent:get(DopplerRef, fun(#doppler{methods = Methods}) -> Methods end).
 
+-spec def(#doppler_universal{}, atom(), method_fun()) -> ok.
 def(#doppler_universal{doppler_ref = DopplerRef}, Name, Fun) when is_atom(Name) and is_function(Fun) ->
     {arity, Arity} = erlang:fun_info(Fun, arity),
     Key = {Name, Arity},
@@ -58,6 +74,7 @@ def(#doppler_universal{doppler_ref = DopplerRef}, Name, Fun) when is_atom(Name) 
         Doppler#doppler{methods = maps:put(Key, Fun, Methods)}
     end).
 
+-spec call(atom(), list()) -> term() | no_return().
 call(FunName, Args) ->
     {#doppler_universal{doppler_ref = DopplerRef}, FunArgs} = split_args(Args),
     case agent:get_and_update(DopplerRef, fun(Doppler) -> call(Doppler, FunName, FunArgs) end) of
