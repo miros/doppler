@@ -64,10 +64,9 @@ call(FunName, Args) ->
         {unknown_method, State} -> erlang:error({doppler_undefined_method_called, {doppler_state, State}, {name, FunName}, {args, FunArgs}});
         {bad_return, Return, State} -> erlang:error({doppler_bad_method_return, {doppler_state, State}, {name, FunName}, {args, FunArgs}, {return, Return}});
         {call_error, Error, State} -> erlang:error({doppler_error_in_method, {doppler_state, State}, {name, FunName}, {args, FunArgs}, {error, Error}});
+        {custom_call_error, Error} -> erlang:error(Error);
         {result, Result} -> Result
     end.
-
-
 
 %%====================================================================
 %% Internal functions
@@ -86,6 +85,7 @@ call(#doppler{state = State, methods = Methods, log = Log} = Doppler, FunName, F
             try
                 case erlang:apply(Method, [State | FunArgs]) of
                     {Result, NewState} -> {{result, Result}, Doppler#doppler{log = [{FunName, FunArgs} | Log], state = NewState}};
+                    {error, CustomError, NewState} -> {{custom_call_error, CustomError}, Doppler#doppler{log = [{FunName, FunArgs} | Log], state = NewState}};
                     BadReturn -> {{bad_return, BadReturn, State}, Doppler#doppler{log = [{FunName, FunArgs} | Log]}}
                 end
             catch Class:Error ->
