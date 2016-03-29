@@ -29,12 +29,12 @@ Consider the following example. We need to compose a function which prints curre
 ```erlang
 print_time() ->
     Time = erlang:system_time(seconds),
-    io:format("~p", [Time])
+    io:format("~p", [Time]).
 ```
 
 How could we test it? The possible way is to "mock" `erlang:system_time` and `io:format` calls. But if we then change `io:format` call to `io:fwrite` or use `os:timestamp` instead of `erlang:system_time`, our code will still work, but tests will fail. This generally shouldn't happen: if a function's interface does not change, the tests shouldn't fail. This points out that our function's contract is wider then its interface: it implicitly uses "global" functions. Such code is difficult to test and support.
 
-One way to improve situation is to make contract "explicit".
+One way to improve situation is to make contract explicit.
 
 
 ```erlang
