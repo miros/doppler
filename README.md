@@ -70,10 +70,10 @@ print_time_test(_Config) ->
 
     print_time(System),
 
-    PrintedTime = doppler:state(),
+    PrintedTime = doppler:state(System),
     doppler:stop(System).
 
-    PrintedTime = "1459246205".
+    "1459246205" = lists:flatten(PrintedTime).
 
 ```
 
