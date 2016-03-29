@@ -205,7 +205,7 @@ catch exit:bar ->
     ok
 end,
 
-ok = doppler:stop(D)
+ok = doppler:stop(D).
 ```
 
 
