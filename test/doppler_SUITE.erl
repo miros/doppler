@@ -44,7 +44,12 @@ start_with_state(_Config) ->
 stop(_Config) ->
     D = doppler:start(123),
     ok = doppler:stop(D),
-    {noproc, _} = expect_exit(fun() -> doppler:state(D) end).
+
+    ok = try
+        doppler:state(D)
+    catch exit:{noproc, _} ->
+        ok
+    end.
 
 log(_Config) ->
     D = doppler:start(123),
@@ -97,12 +102,20 @@ call_ok(_Config) ->
 call_unknown_method(_Config) ->
     D = doppler:start(123),
 
-    {doppler_undefined_method_called, [{doppler_state,123}, {name,incr}, {args,[1]}]} = expect_error(fun() -> D:incr(1) end),
+    try
+        D:incr(1)
+    catch error:{doppler_undefined_method_called, [{doppler_state,123}, {name,incr}, {args,[1]}]} ->
+        ok
+    end,
 
     doppler:def(D, incr, fun(N, Inc) -> {N+Inc, N+Inc} end),
     124 = D:incr(1),
 
-    {doppler_undefined_method_called, [{doppler_state,124}, {name,incr}, {args,[1,2]}]} = expect_error(fun() -> D:incr(1,2) end),
+    ok = try
+        D:incr(1,2)
+    catch error:{doppler_undefined_method_called, [{doppler_state,124}, {name,incr}, {args,[1,2]}]} ->
+        ok
+    end,
 
     ok = doppler:stop(D).
 
@@ -111,7 +124,11 @@ call_bad_return(_Config) ->
 
     doppler:def(D, incr, fun(_, _) -> bad_return end),
 
-    {doppler_bad_method_return, [{doppler_state,123}, {name,incr}, {args,[1]}, {return, bad_return}]} = expect_error(fun() -> D:incr(1) end),
+    ok = try
+        D:incr(1)
+    catch error:{doppler_bad_method_return, [{doppler_state,123}, {name,incr}, {args,[1]}, {return, bad_return}]} ->
+        ok
+    end,
 
     ok = doppler:stop(D).
 
@@ -120,7 +137,11 @@ call_error(_Config) ->
 
     doppler:def(D, incr, fun(_, _) -> erlang:error(bad_return) end),
 
-    {doppler_error_in_method, [{doppler_state,123}, {name,incr}, {args,[1]}, {error, {error, bad_return}}]} = expect_error(fun() -> D:incr(1) end),
+    ok = try
+        D:incr(1)
+    catch error:{doppler_error_in_method, [{doppler_state,123}, {name,incr}, {args,[1]}, {error, {error, bad_return}}]} ->
+        ok
+    end,
 
     ok = doppler:stop(D).
 
@@ -128,29 +149,32 @@ call_custom_error(_Config) ->
     D = doppler:start(123),
 
     doppler:def(D, incr, fun(N, _) -> {error, {error, bar}, N} end),
-    bar = expect_exception(error, fun() -> D:incr(1) end),
+    ok = try
+        D:incr(1)
+    catch error:bar ->
+        ok
+    end,
 
     doppler:def(D, incr, fun(N, _) -> {error, {throw, bar}, N} end),
-    bar = expect_exception(throw, fun() -> D:incr(1) end),
+    ok = try
+        D:incr(1)
+    catch throw:bar ->
+        ok
+    end,
 
     doppler:def(D, incr, fun(N, _) -> {error, {exit, bar}, N} end),
-    bar = expect_exception(exit, fun() -> D:incr(1) end),
+    ok = try
+        D:incr(1)
+    catch exit:bar ->
+        ok
+    end,
 
     doppler:def(D, incr, fun(N, _) -> {error, {bad_error, bar}, N} end),
-    {doppler_bad_custom_error, {bad_error, bar}} = expect_exception(error, fun() -> D:incr(1) end),
+    ok = try
+        D:incr(1)
+    catch error:{doppler_bad_custom_error, {bad_error, bar}} ->
+        ok
+    end,
 
     ok = doppler:stop(D).
 
-expect_exit(Fun) ->
-    expect_exception(exit, Fun).
-
-expect_error(Fun) ->
-    expect_exception(error, Fun).
-
-expect_exception(Class, Fun) ->
-    try
-        Fun(),
-        ok
-    catch Class:Error ->
-        Error
-    end.
