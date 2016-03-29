@@ -1,5 +1,5 @@
 {application, 'doppler',
- [{description, "An OTP library"},
+ [{description, "Yet another mocking library"},
   {vsn, "0.1.0"},
   {registered, []},
   {applications,
