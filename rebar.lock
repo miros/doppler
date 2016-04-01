@@ -1,4 +1,4 @@
 [{<<"agent">>,
   {git,"git://github.com/savonarola/agent.git",
-       {ref,"e3bc7e00d2d2f0c93d1a2e6ff4ac4963e71c5fe7"}},
+       {ref,"33e26f350f1fe68b9b0604c5918733598ed61ff7"}},
   0}].
