@@ -107,7 +107,7 @@ call(FunName, Args) ->
     case agent:get_and_update(DopplerRef, fun(Doppler) -> call(Doppler, FunName, FunArgs) end) of
         {unknown_method, State} -> erlang:error({doppler_undefined_method_called, [{doppler_state, State}, {name, FunName}, {args, FunArgs}]});
         {bad_return, Return, State} -> erlang:error({doppler_bad_method_return, [{doppler_state, State}, {name, FunName}, {args, FunArgs}, {return, Return}]});
-        {call_error, Error, State} -> erlang:error({doppler_error_in_method, [{doppler_state, State}, {name, FunName}, {args, FunArgs}, {error, Error}]});
+        {call_error, Error, Stack, State} -> erlang:error({doppler_error_in_method, [{doppler_state, State}, {name, FunName}, {args, FunArgs}, {error, Error}, {stack, Stack}]});
         {custom_call_error, Error} -> raise_error(Error);
         {result, Result} -> Result
     end.
@@ -148,7 +148,7 @@ call_method(#doppler{state = State, log = Log} = Doppler, FunName, FunArgs, Args
             BadReturn -> {{bad_return, BadReturn, State}, Doppler#doppler{log = [{FunName, FunArgs} | Log]}}
         end
     catch Class:Error ->
-        {{call_error, {Class, Error}, State}, Doppler#doppler{log = [{FunName, FunArgs} | Log]}}
+        {{call_error, {Class, Error}, erlang:get_stacktrace(), State}, Doppler#doppler{log = [{FunName, FunArgs} | Log]}}
     end.
 
 raise_error({throw, What}) ->

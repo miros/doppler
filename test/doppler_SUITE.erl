@@ -143,7 +143,7 @@ call_error(_Config) ->
 
     ok = try
         D:incr(1)
-    catch error:{doppler_error_in_method, [{doppler_state,123}, {name,incr}, {args,[1]}, {error, {error, bad_return}}]} ->
+    catch error:{doppler_error_in_method, [{doppler_state,123}, {name,incr}, {args,[1]}, {error, {error, bad_return}}, {stack, _}]} ->
         ok
     end,
 
